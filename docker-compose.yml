@@ -1,0 +1,43 @@
+services:
+  pyserver:
+    build:
+      context: .
+      target: pyserver
+    ports:
+      - "8081:8081"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - elixire-images:/app/images/
+      - elixire-dumps:/app/dumps/
+      - ${PWD}/config.py:/app/config.py
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://pyserver:8081"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+  db:
+     build:
+      context: .
+      target: db
+     # https://stackoverflow.com/a/55835081
+     healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 1s
+      timeout: 3s
+      retries: 5
+  redis:
+      image: redis:latest
+      healthcheck:
+      # https://stackoverflow.com/a/70706628
+       test: ["CMD", "redis-cli", "ping"]
+       interval: 1s
+       timeout: 3s
+       retries: 5
+
+volumes:
+  elixire-images:
+  elixire-dumps:
